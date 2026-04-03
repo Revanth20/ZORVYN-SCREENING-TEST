@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, serial, text, numeric, timestamp } from 'drizzle-orm/pg-core';
+import { pgEnum, pgTable, serial, integer, text, numeric, timestamp, varchar } from 'drizzle-orm/pg-core';
 
 export const userRole = pgEnum('user_role', ['admin', 'viewer', 'analyst']);
 export const userStatus = pgEnum('user_status', ['active', 'inactive']);
@@ -13,6 +13,13 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
+
+export const userPassword = pgTable('user_password', {
+  id: serial('id').primaryKey(),
+  password: varchar('password', { length: 70 }).notNull(),
+  userId: integer('user_id').notNull().references(() => users.id),
+});
+
 
 export const records = pgTable('records', {
   id: serial('id').primaryKey(),

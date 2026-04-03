@@ -1,21 +1,25 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { payloadSchema } from '../utilities/zod.js';
+import { verifyToken } from '../utilities/jwt.js';
 
 export function authorize(...allowedRoles: ('admin' | 'analyst' | 'viewer')[]) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const role = request.headers['role'];
-    const parsed = payloadSchema.pick({ role: true }).safeParse({ role });
-    if (!parsed.success) {
-      return reply.code(400).send({ 
-        message: 'Invalid or missing role header', 
-        status: false 
-    });
+    const authHeader = request.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return reply.code(401).send({ status: false, message: 'Authorization token required' });
     }
-    if (!allowedRoles.includes(parsed.data.role)) {
-      return reply.code(403).send({ 
-        message: 'Forbidden', 
-        status: false 
-    });
+    const token = authHeader.slice(7);
+    try {
+      const payload = verifyToken(token);
+      const parsed = payloadSchema.safeParse(payload);
+      if (!parsed.success) {
+        return reply.code(401).send({ status: false, message: 'Invalid token payload' });
+      }
+      if (!allowedRoles.includes(parsed.data.role)) {
+        return reply.code(403).send({ status: false, message: 'Forbidden' });
+      }
+    } catch {
+      return reply.code(401).send({ status: false, message: 'Invalid or expired token' });
     }
   };
 }

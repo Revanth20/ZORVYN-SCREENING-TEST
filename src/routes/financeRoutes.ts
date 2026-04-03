@@ -9,13 +9,7 @@ export default function recordRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Records'],
       description: 'Create a new record. Requires role: admin',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
         required: ['amount', 'type', 'category'],
@@ -81,13 +75,7 @@ export default function recordRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Records'],
       description: 'Update a record. Requires role: admin',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       params: { type: 'object', properties: { id: { type: 'number' } } },
       body: {
         type: 'object',
@@ -162,16 +150,10 @@ export default function recordRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Records'],
       description: 'Delete a record. Requires role: admin',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       params: { type: 'object', properties: { id: { type: 'number' } } },
       response: {
-        204: { description: 'Record deleted successfully', type: 'null' },
+        200: { description: 'Record deleted successfully', type: 'object', properties: { message: { type: 'string' }, status: { type: 'boolean' } } },
         400: {
           description: 'Bad request',
           type: 'object',
@@ -214,13 +196,7 @@ export default function recordRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Records'],
       description: 'Get a record by ID. Requires role: admin, analyst, or viewer',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       params: { type: 'object', properties: { id: { type: 'number' } } },
       response: {
         200: {
@@ -284,13 +260,7 @@ export default function recordRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Records'],
       description: 'Get all records with filters. Requires role: admin, analyst, or viewer',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       querystring: {
         type: 'object',
         properties: {

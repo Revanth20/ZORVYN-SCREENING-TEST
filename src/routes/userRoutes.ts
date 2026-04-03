@@ -9,18 +9,13 @@ export default function userRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Users'],
       description: 'Create a new user. Requires role: admin',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
-        required: ['username', 'role', 'status'],
+        required: ['username', 'password', 'role', 'status'],
         properties: {
           username: { type: 'string' },
+          password: { type: 'string', minLength: 6 },
           role: { type: 'string', enum: ['admin', 'viewer', 'analyst'] },
           status: { type: 'string', enum: ['active', 'inactive'] },
         },
@@ -77,13 +72,7 @@ export default function userRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Users'],
       description: 'Update a user. Requires role: admin',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       params: { type: 'object', properties: { id: { type: 'number' } } },
       body: {
         type: 'object',
@@ -146,16 +135,17 @@ export default function userRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Users'],
       description: 'Delete a user. Requires role: admin',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       params: { type: 'object', properties: { id: { type: 'number' } } },
       response: {
-        204: { description: 'User deleted successfully', type: 'null' },
+        200: {
+          description: 'User deleted successfully',
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+            status: { type: 'boolean' },
+          },
+        },
         400: {
           description: 'Bad request',
           type: 'object',
@@ -190,13 +180,7 @@ export default function userRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Users'],
       description: 'Get a user by ID. Requires role: admin',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       params: { type: 'object', properties: { id: { type: 'number' } } },
       response: {
         200: {
@@ -258,13 +242,7 @@ export default function userRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Users'],
       description: 'Get all users with filters. Requires role: admin',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       querystring: {
         type: 'object',
         properties: {

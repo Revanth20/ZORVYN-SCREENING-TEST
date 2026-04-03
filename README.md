@@ -1,6 +1,18 @@
+
 # Finance Dashboard Backend
 
 A backend for a finance dashboard that handles user role management, financial records, aggregated analytics, and role-based access control.
+
+---
+
+## Live
+
+| Version      | URL                                                                                                         |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| With auth    | [zorvyn-screening-test-with-auth.onrender.com/docs](https://zorvyn-screening-test-with-auth.onrender.com/docs) |
+| Without auth | [zorvyn-screening-test.onrender.com/docs](https://zorvyn-screening-test.onrender.com/docs)                     |
+
+The `without-auth` branch is a version where the role is passed directly via a request header — no login flow. The master branch (this one) has full JWT-based authentication.
 
 ---
 
@@ -96,6 +108,13 @@ http://localhost:3000/docs
 
 ## API Overview
 
+### Auth — `/auth`
+
+| Method | Endpoint         | Description                                                  |
+| ------ | ---------------- | ------------------------------------------------------------ |
+| POST   | `/auth/signup` | Register a new user with username, password, and role        |
+| POST   | `/auth/login`  | Login and receive a JWT in the Authorization response header |
+
 ### Users — `/users`
 
 > All user routes require `role: admin`
@@ -142,17 +161,19 @@ The `trend` query param accepts `<number><unit>` format:
 
 ---
 
-## Access Control
+## Authentication & Access Control
 
-For this assignment, auth is kept intentionally simple. The `role` is passed as a plain request header and the `authorize` middleware checks it against the allowed roles for each route — returning `400` for an invalid role and `403` for insufficient permissions.
+Signup creates a user with a hashed password (bcrypt) stored separately from the user record. Login verifies the credentials and returns a JWT in the `Authorization` response header. Every protected route then reads that token from the `Authorization: Bearer <token>` request header, verifies it, and checks the role embedded in the payload.
 
+```text
+admin     → full access (users, records, dashboard)
+analyst   → read records + full dashboard access
+viewer    → read records only
 ```
-role: admin     → full access
-role: analyst   → read records + dashboard
-role: viewer    → read records only
-```
 
-I've done proper auth before in other projects — JWT verification, OTP flows, Google OAuth and Apple Sign In — so the infrastructure isn't new to me. Since full authentication was listed as optional for this assignment, I kept the focus on the access control logic itself rather than the login flow. The `generateToken` and `verifyToken` utilities in `src/utilities/jwt.ts` are already there if the auth layer needs to be wired up later.
+The `authorize` middleware returns `401` if the token is missing, invalid, or expired, and `403` if the role doesn't have permission for that route.
+
+I've done this kind of auth flow before in other projects — JWT verification, OTP, Google OAuth, Apple Sign In — so the pieces were familiar. The JWT utilities (`generateToken`, `verifyToken`) in `src/utilities/jwt.ts` are what tie everything together here.
 
 ---
 
@@ -170,12 +191,17 @@ I've done proper auth before in other projects — JWT verification, OTP flows, 
 
 ---
 
+## Challenges & Learnings
+
+**Swagger and the Authorization header** — I honestly didn't know about `securitySchemes` before this. When I added JWT I just put `authorization` as a header parameter in the route schema like I did for everything else. Swagger UI showed the field, I filled in the token, sent the request — got 401. I checked the network tab and the header just wasn't there at all even though I had typed the token in. Took me a bit to figure out that Swagger UI doesn't actually send the `Authorization` header when it's defined as a plain parameter — it silently drops it.
+
+After digging into it I found out the right way is to define a `securityScheme` in the OpenAPI config (`type: http, scheme: bearer`) and use `security: [{ bearerAuth: [] }]` on each route. That gives you the **Authorize** button at the top of the docs — you enter the token once there and Swagger handles attaching it to every request. Didn't know that's how it worked before this project.
+
+---
+
 ## Assumptions
 
-- Users are assumed to already exist in the system. The `role` is passed directly in the request header as a stand-in for a real auth token — the caller is trusted to send the correct role for now.
 - `date` on a financial record defaults to the current timestamp if not provided.
 - Soft-deleted records are completely excluded — they won't show up in reads, filters, or dashboard aggregations, and they can't be updated either.
-- The `trend` parameter groups by its own unit — so `2w` gives back eactly 2 data points, one per week. It doesn't paginate across a larger range.
+- The `trend` parameter groups by its own unit — so `2w` gives back exactly 2 data points, one per week. It doesn't paginate across a larger range.
 - Amount precision loss at the JS layer is acceptable — amounts are stored as PostgreSQL `numeric` for accuracy in the DB, but coerced to JS `number` at the API response level.
-
-Full authentication (JWT login, token verification, refresh flow) is being implemented separately in an `master` branch of this project. And without auth is in without-auth branch

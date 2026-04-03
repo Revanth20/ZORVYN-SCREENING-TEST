@@ -1,22 +1,25 @@
 import db from './drizzle.js';
-import { users, records } from './schema.js';
+import { users, records, userPassword } from './schema.js';
 import * as zod from '../utilities/zod.js';
 import { eq, desc, and, isNull, sql, ilike, or } from 'drizzle-orm';
 
 
 //  user related queries
-export async function insertUser(data: zod.CreateUser): Promise<zod.returnUser> {
-  const [result] = await db.insert(users)
-    .values({ username: data.username!, role: data.role, status: data.status })
-    .returning({ id: users.id, username: users.username, role: users.role, status: users.status });
-  return result;
+export async function insertUser(data: zod.UserInsert, hashedPassword: string): Promise<zod.returnUser> {
+  return await db.transaction(async (tx) => {
+    const [user] = await tx.insert(users)
+      .values({ username: data.username, role: data.role, status: data.status })
+      .returning({ id: users.id, username: users.username, role: users.role, status: users.status });
+    await tx.insert(userPassword).values({ userId: user.id, password: hashedPassword });
+    return user;
+  });
 }
 
 export async function updateUser(id: number, data: Partial<zod.UpdateUser>): Promise<zod.returnUser> {
   const { username, role, status } = data;
   const [result] = await db.update(users)
     .set({ username, role, status })
-    .where(eq(users.id, id))
+    .where(and(eq(users.id, id), isNull(users.deletedAt)))
     .returning({ id: users.id, username: users.username, role: users.role, status: users.status });
   if (!result) throw new Error('User not found');
   return result;
@@ -58,6 +61,22 @@ export async function getUsers(filters: zod.UserFilter): Promise<zod.returnUser[
 }
 
 
+// auth related queries
+export async function getUserByUsername(username: string): Promise<zod.returnUser | null> {
+  const [result] = await db.select({
+    id: users.id, username: users.username, role: users.role, status: users.status,
+  }).from(users)
+    .where(and(eq(users.username, username), isNull(users.deletedAt)));
+  return result ?? null;
+}
+
+export async function getPasswordByUserId(userId: number): Promise<string | null> {
+  const [result] = await db.select({ password: userPassword.password })
+    .from(userPassword)
+    .where(eq(userPassword.userId, userId));
+  return result?.password;
+}
+
 //  record related queries
 export async function insertRecord(data: zod.FinanceRecord): Promise<zod.FinanceRecordReturn> {
   const [result] = await db.insert(records)
@@ -77,10 +96,10 @@ export async function insertRecord(data: zod.FinanceRecord): Promise<zod.Finance
   return { ...result, amount: Number(result.amount) };
 }
 
-export async function updateRecord(id: number, data: zod.FinanceRecord): Promise<zod.FinanceRecordReturn> {
+export async function updateRecord(id: number, data: zod.UpdateRecord): Promise<zod.FinanceRecordReturn> {
   const [result] = await db.update(records)
-    .set({ ...data, amount: data.amount.toString() })
-    .where(eq(records.id, id))
+    .set({ ...data, amount: data.amount !== undefined ? data.amount.toString() : undefined })
+    .where(and(eq(records.id, id), isNull(records.deletedAt)))
     .returning({ id: records.id, amount: records.amount, type: records.type, 
     category: records.category, description: records.description, 
     date: records.date 
@@ -179,13 +198,13 @@ export async function getTrends(filters: Pick<zod.filterInput, 'trend'>): Promis
   const { interval, groupBy } = parseTrend(filters.trend);
   const result = await db.execute(sql`
     SELECT
-      DATE_TRUNC(${groupBy}, date) AS period,
+      DATE_TRUNC(${sql.raw(`'${groupBy}'`)}, date) AS period,
       COALESCE(SUM(amount) FILTER (WHERE type = 'income'), 0) AS income,
       COALESCE(SUM(amount) FILTER (WHERE type = 'expense'), 0) AS expense
     FROM records
     WHERE deleted_at IS NULL
-      AND date >= NOW() - INTERVAL ${interval}
-    GROUP BY DATE_TRUNC(${groupBy}, date)
+      AND date >= NOW() - INTERVAL ${sql.raw(`'${interval}'`)}
+    GROUP BY DATE_TRUNC(${sql.raw(`'${groupBy}'`)}, date)
     ORDER BY period ASC
   `);
   return (result.rows as { period: string; income: string; expense: string }[]).map(r => ({

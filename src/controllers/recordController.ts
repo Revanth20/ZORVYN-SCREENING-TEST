@@ -1,13 +1,14 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { financeRecordSchema, idParamSchema, recordFilterSchema } from '../utilities/zod.js';
+import { financeRecordSchema, updateRecordSchema, idParamSchema, recordFilterSchema, formatZodIssues } from '../utilities/zod.js';
 import * as queries from '../drizzle/queries.js';
 
 export async function createRecord(request: FastifyRequest, reply: FastifyReply) {
   const parsed = financeRecordSchema.safeParse(request.body);
   if (!parsed.success) {
-    console.error(parsed.error.issues);
+    const message = formatZodIssues(parsed.error.issues);
+    console.error(message);
     return reply.code(400).send({
-      message: parsed.error.issues,
+      message,
       status: false
     });
   }
@@ -30,17 +31,19 @@ export async function createRecord(request: FastifyRequest, reply: FastifyReply)
 export async function updateRecord(request: FastifyRequest, reply: FastifyReply) {
   const paramParsed = idParamSchema.safeParse(request.params);
   if (!paramParsed.success) {
-    console.error(paramParsed.error.issues);
+    const message = formatZodIssues(paramParsed.error.issues);
+    console.error(message);
     return reply.code(400).send({
-      message: paramParsed.error.issues,
+      message,
       status: false
     });
   }
-  const bodyParsed = financeRecordSchema.safeParse(request.body);
+  const bodyParsed = updateRecordSchema.safeParse(request.body);
   if (!bodyParsed.success) {
-    console.error(bodyParsed.error.issues);
+    const message = formatZodIssues(bodyParsed.error.issues);
+    console.error(message);
     return reply.code(400).send({
-      message: bodyParsed.error.issues,
+      message,
       status: false
     });
   }
@@ -69,9 +72,10 @@ export async function updateRecord(request: FastifyRequest, reply: FastifyReply)
 export async function deleteRecord(request: FastifyRequest, reply: FastifyReply) {
   const parsed = idParamSchema.safeParse(request.params);
   if (!parsed.success) {
-    console.error(parsed.error.issues);
+    const message = formatZodIssues(parsed.error.issues);
+    console.error(message);
     return reply.code(400).send({
-      message: parsed.error.issues,
+      message,
       status: false
     });
   }
@@ -99,9 +103,10 @@ export async function deleteRecord(request: FastifyRequest, reply: FastifyReply)
 export async function getRecord(request: FastifyRequest, reply: FastifyReply) {
   const parsed = idParamSchema.safeParse(request.params);
   if (!parsed.success) {
-    console.error(parsed.error.issues);
+    const message = formatZodIssues(parsed.error.issues);
+    console.error(message);
     return reply.code(400).send({
-      message: parsed.error.issues,
+      message,
       status: false
     });
   }
@@ -130,8 +135,9 @@ export async function getRecord(request: FastifyRequest, reply: FastifyReply) {
 export async function getRecords(request: FastifyRequest, reply: FastifyReply) {
   const parsed = recordFilterSchema.safeParse(request.query);
   if (!parsed.success) {
+    const message = formatZodIssues(parsed.error.issues);
     return reply.code(400).send({
-      message: parsed.error.issues,
+      message,
       status: false
     });
   }

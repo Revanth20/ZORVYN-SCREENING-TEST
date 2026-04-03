@@ -1,5 +1,9 @@
 // using zod for runtime validation of all inputs and also convert the zod schema to types so we use that for compile time validation
-import { z } from 'zod';
+import { z, type ZodIssue } from 'zod';
+
+export function formatZodIssues(issues: ZodIssue[]): string {
+  return issues.map(issue => issue.message).join(', ');
+}
 
 // user related validations
 export const userSchema = z.object({
@@ -11,46 +15,23 @@ export const userSchema = z.object({
   updatedAt: z.date(),
   deletedAt: z.date().optional(),
 });
-
-export const createUserSchema = userSchema.pick({ username: true, role: true, status: true });
-
-export const updateUserSchema = createUserSchema.partial();
+export const createUserSchema = userSchema.pick({ username: true, role: true, status: true }).extend({
+  password: z.string().min(6),
+});
+export const updateUserSchema = createUserSchema.omit({ password: true }).partial();
+export const signupSchema = createUserSchema.omit({ status: true, role: true });
 
 // record related validations
-
 export const financeRecordSchema = z.object({
-  amount: z.coerce.number().positive(),
+  amount: z.coerce.number().positive('amount must be a positive number'),
   type: z.enum(['income', 'expense']),
   category: z.string().min(1),
   description: z.string().nullish(),
-  date: z.date(),
+  date: z.coerce.date(),
 });
 
+export const updateRecordSchema = financeRecordSchema.partial();
 
-
-
-// dashboard related validations
-export const dashboardSchema = z.object({
-  totalIncome: z.number().positive(),
-  totalExpense: z.number().positive(),
-  netBalance: z.number(),
-});
-
-export const categoryTotalSchema = z.object({
-  category: z.string(),
-  income: z.number(),
-  expense: z.number(),
-});
-
-export const trendSchema = z.object({
-  period: z.string(),
-  income: z.number(),
-  expense: z.number(),
-});
-
-export const financeRecordReturnSchema = financeRecordSchema.extend({
-  id: z.number().int().positive(),
-});
 
 export const recordFilterSchema = z.object({
   search: z.string().optional(),
@@ -67,16 +48,17 @@ export const userFilterSchema = z.object({
   limit: z.coerce.number().int().positive().default(10),
 });
 
+export const loginSchema = z.object({
+    username: z.string().min(1),
+    password: z.string().min(6),
+});
+
 // shared validations
 export const idParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
-export const payloadSchema = z.object({
-  id: z.number().int().positive(),
-  username: z.string().min(1),
-  role: z.enum(['admin', 'viewer', 'analyst']),
-});
+export const payloadSchema = userSchema.pick({ id: true, username: true, role: true });
 
 export const filterInputSchema = z.object({
   pagination: z.coerce.number().int().positive().default(1),
@@ -84,20 +66,22 @@ export const filterInputSchema = z.object({
   trend: z.string().regex(/^\d+[dwmy]$/).default('1w'),
 });
 
-// converting to types so we can use for compile time type validation
+// types
 export type User = z.infer<typeof userSchema>;
 export type CreateUser = z.infer<typeof createUserSchema>;
+export type UserInsert = Omit<CreateUser, 'password'>; // user fields only, password passed separately
 export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type returnUser = Pick<User, 'id' | 'username' | 'role' | 'status'>;
 
 export type Payload = z.infer<typeof payloadSchema>;
 
 export type FinanceRecord = z.infer<typeof financeRecordSchema>;
+export type UpdateRecord = z.infer<typeof updateRecordSchema>;
 
-export type dashboard = z.infer<typeof dashboardSchema>;
-export type CategoryTotal = z.infer<typeof categoryTotalSchema>;
-export type Trend = z.infer<typeof trendSchema>;
-export type FinanceRecordReturn = z.infer<typeof financeRecordReturnSchema>;
+export type dashboard = { totalIncome: number; totalExpense: number; netBalance: number };
+export type CategoryTotal = { category: string; income: number; expense: number };
+export type Trend = { period: string; income: number; expense: number };
+export type FinanceRecordReturn = FinanceRecord & { id: number };
 export type filterInput = z.infer<typeof filterInputSchema>;
 export type RecordFilter = z.infer<typeof recordFilterSchema>;
 export type UserFilter = z.infer<typeof userFilterSchema>;

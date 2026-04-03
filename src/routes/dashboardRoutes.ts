@@ -9,13 +9,7 @@ export default function dashboardRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Dashboard'],
       description: 'Get dashboard summary - total income, expense and net balance. Requires role: admin or analyst',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       response: {
         200: {
           type: 'object',
@@ -58,13 +52,7 @@ export default function dashboardRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Dashboard'],
       description: 'Get category wise income and expense totals. Requires role: admin or analyst',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       response: {
         200: {
           type: 'object',
@@ -110,13 +98,7 @@ export default function dashboardRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Dashboard'],
       description: 'Get recent records with pagination. Requires role: admin or analyst',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       querystring: {
         type: 'object',
         properties: {
@@ -180,13 +162,7 @@ export default function dashboardRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Dashboard'],
       description: 'Get income and expense trends grouped by period (e.g. 1d, 2w, 3m, 1y). Requires role: admin or analyst',
-      headers: {
-        type: 'object',
-        required: ['role'],
-        properties: {
-          role: { type: 'string', enum: ['admin', 'analyst', 'viewer'] },
-        },
-      },
+      security: [{ bearerAuth: [] }],
       querystring: {
         type: 'object',
         properties: {
