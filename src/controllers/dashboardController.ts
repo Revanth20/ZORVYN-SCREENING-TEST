@@ -39,8 +39,8 @@ export async function getCategoryWiseTotals(_request: FastifyRequest, reply: Fas
 export async function getRecentActivity(request: FastifyRequest, reply: FastifyReply) {
   const parsed = filterInputSchema.pick({ pagination: true, limit: true }).safeParse(request.query);
   if (!parsed.success) {
-    return reply.code(400).send({ 
-        message: parsed.error.issues, 
+    return reply.code(400).send({
+        message: parsed.error.issues[0]?.message ?? 'Invalid request',
         status: false
     });
   }
@@ -63,9 +63,9 @@ export async function getRecentActivity(request: FastifyRequest, reply: FastifyR
 export async function getTrends(request: FastifyRequest, reply: FastifyReply) {
   const parsed = filterInputSchema.pick({ trend: true }).safeParse(request.query);
   if (!parsed.success) {
-    return reply.code(400).send({ 
-        message: parsed.error.issues, 
-        status: false 
+    return reply.code(400).send({
+        message: parsed.error.issues[0]?.message ?? 'Invalid request',
+        status: false
     });
   }
   try {

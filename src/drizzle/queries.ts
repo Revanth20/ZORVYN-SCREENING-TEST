@@ -16,7 +16,7 @@ export async function updateUser(id: number, data: Partial<zod.UpdateUser>): Pro
   const { username, role, status } = data;
   const [result] = await db.update(users)
     .set({ username, role, status })
-    .where(eq(users.id, id))
+    .where(and(eq(users.id, id), isNull(users.deletedAt)))
     .returning({ id: users.id, username: users.username, role: users.role, status: users.status });
   if (!result) throw new Error('User not found');
   return result;
@@ -66,7 +66,7 @@ export async function insertRecord(data: zod.FinanceRecord): Promise<zod.Finance
       type: data.type,
       category: data.category,
       description: data.description,
-      date: data.date
+      date: data.date ?? new Date()
     })
     .returning({ 
       id: records.id, amount: records.amount, type: records.type, 
@@ -78,9 +78,16 @@ export async function insertRecord(data: zod.FinanceRecord): Promise<zod.Finance
 }
 
 export async function updateRecord(id: number, data: zod.FinanceRecord): Promise<zod.FinanceRecordReturn> {
+  const values = {
+    amount: data.amount.toString(),
+    type: data.type,
+    category: data.category,
+    description: data.description,
+    ...(data.date ? { date: data.date } : {}),
+  };
   const [result] = await db.update(records)
-    .set({ ...data, amount: data.amount.toString() })
-    .where(eq(records.id, id))
+    .set(values)
+    .where(and(eq(records.id, id), isNull(records.deletedAt)))
     .returning({ id: records.id, amount: records.amount, type: records.type, 
     category: records.category, description: records.description, 
     date: records.date 
@@ -122,7 +129,7 @@ export async function getRecords(filters: zod.RecordFilter): Promise<zod.Finance
       search ? or(ilike(records.category, `%${search}%`), ilike(records.description, `%${search}%`)) : undefined,
       type ? eq(records.type, type) : undefined,
     ))
-    .orderBy(desc(records.createdAt))
+    .orderBy(desc(records.date))
     .limit(limit)
     .offset(offset);
   return result.map(r => ({ ...r, amount: Number(r.amount) }));
@@ -161,7 +168,7 @@ export async function getRecentActivity(filters: Pick<zod.filterInput, 'paginati
   })
     .from(records)
     .where(isNull(records.deletedAt))
-    .orderBy(desc(records.createdAt))
+    .orderBy(desc(records.date))
     .limit(limit)
     .offset(offset);
   return result.map(r => ({ ...r, amount: Number(r.amount) }));
@@ -184,8 +191,8 @@ export async function getTrends(filters: Pick<zod.filterInput, 'trend'>): Promis
       COALESCE(SUM(amount) FILTER (WHERE type = 'expense'), 0) AS expense
     FROM records
     WHERE deleted_at IS NULL
-      AND date >= NOW() - INTERVAL ${interval}
-    GROUP BY DATE_TRUNC(${groupBy}, date)
+      AND date >= NOW() - ${interval}::interval
+    GROUP BY 1
     ORDER BY period ASC
   `);
   return (result.rows as { period: string; income: string; expense: string }[]).map(r => ({

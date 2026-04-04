@@ -139,7 +139,7 @@ export default function dashboardRoutes(app: FastifyInstance) {
                   amount: { type: 'number' },
                   type: { type: 'string' },
                   category: { type: 'string' },
-                  description: { type: 'string' },
+                  description: { type: ['string', 'null'] },
                   date: { type: 'string', format: 'date-time' },
                 },
               },

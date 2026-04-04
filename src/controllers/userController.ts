@@ -1,13 +1,13 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import * as queries from '../drizzle/queries.js';
-import { createUserSchema, updateUserSchema, idParamSchema, userFilterSchema } from '../utilities/zod.js';
+import { createUserSchema, idParamSchema, updateUserSchema, userFilterSchema } from '../utilities/zod.js';
 
 export async function createUser(request: FastifyRequest, reply: FastifyReply) {
   const parsed = createUserSchema.safeParse(request.body);
   if (!parsed.success) {
     console.error(parsed.error.issues);
     return reply.code(400).send({
-      message: parsed.error.issues,
+      message: parsed.error.issues[0]?.message ?? 'Invalid request',
       status: false
     });
   }
@@ -32,7 +32,7 @@ export async function updateUser(request: FastifyRequest, reply: FastifyReply) {
   if (!paramParsed.success) {
     console.error(paramParsed.error.issues);
     return reply.code(400).send({
-      message: paramParsed.error.issues,
+      message: paramParsed.error.issues[0]?.message ?? 'Invalid request',
       status: false
     });
   }
@@ -40,7 +40,7 @@ export async function updateUser(request: FastifyRequest, reply: FastifyReply) {
   if (!bodyParsed.success) {
     console.error(bodyParsed.error.issues);
     return reply.code(400).send({
-      message: bodyParsed.error.issues,
+      message: bodyParsed.error.issues[0]?.message ?? 'Invalid request',
       status: false
     });
   }
@@ -71,7 +71,7 @@ export async function deleteUser(request: FastifyRequest, reply: FastifyReply) {
   if (!parsed.success) {
     console.error(parsed.error.issues);
     return reply.code(400).send({
-      message: parsed.error.issues,
+      message: parsed.error.issues[0]?.message ?? 'Invalid request',
       status: false
     });
   }
@@ -101,7 +101,7 @@ export async function getUser(request: FastifyRequest, reply: FastifyReply) {
   if (!parsed.success) {
     console.error(parsed.error.issues);
     return reply.code(400).send({
-      message: parsed.error.issues,
+      message: parsed.error.issues[0]?.message ?? 'Invalid request',
       status: false
     });
   }
@@ -131,7 +131,7 @@ export async function getUsers(request: FastifyRequest, reply: FastifyReply) {
   const parsed = userFilterSchema.safeParse(request.query);
   if (!parsed.success) {
     return reply.code(400).send({
-      message: parsed.error.issues,
+      message: parsed.error.issues[0]?.message ?? 'Invalid request',
       status: false
     });
   }

@@ -14,16 +14,22 @@ export const userSchema = z.object({
 
 export const createUserSchema = userSchema.pick({ username: true, role: true, status: true });
 
-export const updateUserSchema = createUserSchema.partial();
+export const updateUserSchema = z.object({
+  username: z.string().min(1).optional(),
+  role: z.enum(['admin', 'viewer', 'analyst']).optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+}).refine((data) => Object.keys(data).length > 0, {
+  message: 'At least one field is required',
+});
 
 // record related validations
 
 export const financeRecordSchema = z.object({
-  amount: z.coerce.number().positive(),
+  amount: z.coerce.number().positive({ message: 'amount must be a positive number' }),
   type: z.enum(['income', 'expense']),
   category: z.string().min(1),
   description: z.string().nullish(),
-  date: z.date(),
+  date: z.coerce.date().optional(),
 });
 
 
@@ -50,6 +56,7 @@ export const trendSchema = z.object({
 
 export const financeRecordReturnSchema = financeRecordSchema.extend({
   id: z.number().int().positive(),
+  date: z.date(),
 });
 
 export const recordFilterSchema = z.object({
@@ -81,7 +88,7 @@ export const payloadSchema = z.object({
 export const filterInputSchema = z.object({
   pagination: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().default(10),
-  trend: z.string().regex(/^\d+[dwmy]$/).default('1w'),
+  trend: z.string().regex(/^[1-9]\d*[dwmy]$/).default('1w'),
 });
 
 // converting to types so we can use for compile time type validation

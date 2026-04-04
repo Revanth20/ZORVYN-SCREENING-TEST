@@ -18,7 +18,7 @@ export default function userRoutes(app: FastifyInstance) {
       },
       body: {
         type: 'object',
-        required: ['username', 'role', 'status'],
+        required: ['username', 'role'],
         properties: {
           username: { type: 'string' },
           role: { type: 'string', enum: ['admin', 'viewer', 'analyst'] },
@@ -87,7 +87,7 @@ export default function userRoutes(app: FastifyInstance) {
       params: { type: 'object', properties: { id: { type: 'number' } } },
       body: {
         type: 'object',
-        required: ['username', 'role', 'status'],
+        minProperties: 1,
         properties: {
           username: { type: 'string' },
           role: { type: 'string', enum: ['admin', 'viewer', 'analyst'] },
@@ -155,7 +155,14 @@ export default function userRoutes(app: FastifyInstance) {
       },
       params: { type: 'object', properties: { id: { type: 'number' } } },
       response: {
-        204: { description: 'User deleted successfully', type: 'null' },
+        200: {
+          description: 'User deleted successfully',
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+            status: { type: 'boolean' },
+          },
+        },
         400: {
           description: 'Bad request',
           type: 'object',
