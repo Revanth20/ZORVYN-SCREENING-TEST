@@ -27,7 +27,7 @@ export const financeRecordSchema = z.object({
   type: z.enum(['income', 'expense']),
   category: z.string().min(1),
   description: z.string().nullish(),
-  date: z.coerce.date(),
+  date: z.coerce.date().optional(),
 });
 
 export const updateRecordSchema = financeRecordSchema.partial();
@@ -63,7 +63,7 @@ export const payloadSchema = userSchema.pick({ id: true, username: true, role: t
 export const filterInputSchema = z.object({
   pagination: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().default(10),
-  trend: z.string().regex(/^\d+[dwmy]$/).default('1w'),
+  trend: z.string().regex(/^[1-9]\d*[dwmy]$/).default('1w'),
 });
 
 // types
@@ -81,7 +81,11 @@ export type UpdateRecord = z.infer<typeof updateRecordSchema>;
 export type dashboard = { totalIncome: number; totalExpense: number; netBalance: number };
 export type CategoryTotal = { category: string; income: number; expense: number };
 export type Trend = { period: string; income: number; expense: number };
-export type FinanceRecordReturn = FinanceRecord & { id: number };
+export const financeRecordReturnSchema = financeRecordSchema.extend({
+  id: z.number().int().positive(),
+  date: z.date(),
+});
+export type FinanceRecordReturn = z.infer<typeof financeRecordReturnSchema>;
 export type filterInput = z.infer<typeof filterInputSchema>;
 export type RecordFilter = z.infer<typeof recordFilterSchema>;
 export type UserFilter = z.infer<typeof userFilterSchema>;

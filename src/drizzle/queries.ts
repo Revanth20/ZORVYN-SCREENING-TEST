@@ -85,7 +85,7 @@ export async function insertRecord(data: zod.FinanceRecord): Promise<zod.Finance
       type: data.type,
       category: data.category,
       description: data.description,
-      date: data.date
+      date: data.date ?? new Date(),
     })
     .returning({ 
       id: records.id, amount: records.amount, type: records.type, 
@@ -97,8 +97,15 @@ export async function insertRecord(data: zod.FinanceRecord): Promise<zod.Finance
 }
 
 export async function updateRecord(id: number, data: zod.UpdateRecord): Promise<zod.FinanceRecordReturn> {
+  const values = {
+    ...(data.amount !== undefined ? { amount: data.amount.toString() } : {}),
+    ...(data.type !== undefined ? { type: data.type } : {}),
+    ...(data.category !== undefined ? { category: data.category } : {}),
+    ...(data.description !== undefined ? { description: data.description } : {}),
+    ...(data.date !== undefined ? { date: data.date } : {}),
+  };
   const [result] = await db.update(records)
-    .set({ ...data, amount: data.amount !== undefined ? data.amount.toString() : undefined })
+    .set(values)
     .where(and(eq(records.id, id), isNull(records.deletedAt)))
     .returning({ id: records.id, amount: records.amount, type: records.type, 
     category: records.category, description: records.description, 
@@ -141,7 +148,7 @@ export async function getRecords(filters: zod.RecordFilter): Promise<zod.Finance
       search ? or(ilike(records.category, `%${search}%`), ilike(records.description, `%${search}%`)) : undefined,
       type ? eq(records.type, type) : undefined,
     ))
-    .orderBy(desc(records.createdAt))
+    .orderBy(desc(records.date))
     .limit(limit)
     .offset(offset);
   return result.map(r => ({ ...r, amount: Number(r.amount) }));
@@ -180,7 +187,7 @@ export async function getRecentActivity(filters: Pick<zod.filterInput, 'paginati
   })
     .from(records)
     .where(isNull(records.deletedAt))
-    .orderBy(desc(records.createdAt))
+    .orderBy(desc(records.date))
     .limit(limit)
     .offset(offset);
   return result.map(r => ({ ...r, amount: Number(r.amount) }));

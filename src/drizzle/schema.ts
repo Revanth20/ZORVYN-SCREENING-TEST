@@ -10,7 +10,7 @@ export const users = pgTable('users', {
   role: userRole('role').notNull().default('viewer'),
   status: userStatus('status').notNull().default('active'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdateFn(() => new Date()),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
@@ -28,7 +28,6 @@ export const records = pgTable('records', {
   date: timestamp('date', { withTimezone: true }).notNull().defaultNow(),
   description: text('description'),
   category: text('category').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdateFn(() => new Date()),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
